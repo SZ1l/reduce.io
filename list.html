@@ -1,0 +1,31 @@
+<!DOCTYPE html> 
+<html>
+    <head>
+        <title>REDUCE</title>
+        <meta charset="utf-8">
+        <meta name="keywords content=" program="">
+        <link rel="stylesheet" href="listing.css">
+    </head>
+    <body>
+    <div class="wrapper">
+        <div id="items-container"></div>
+        <br>
+        <div class="pagination">
+            <button id="prevPage" disabled>Previous</button>
+            <span id="pageInfo"></span>
+            <button id="nextPage">Next</button>
+        </div>
+    </div>
+    <form id="upload-form" enctype="multipart/form-data">
+        <label for="xmlFile">Upload your XML file:</label>
+        <input type="file" id="xmlFile" accept=".xml">
+        <button type="submit">Upload</button>
+
+    </form>
+    <div id="checkCount">Обновления: 0</div>
+
+
+    <script src="javas/main.js"></script>    
+</body>
+</html>
+    
