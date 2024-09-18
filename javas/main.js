@@ -1,195 +1,172 @@
-/*function loadXMLDoc(filename) {
-  fetch(filename)
-    .then(response => response.text())
-    .then(data => {
-      parseXML(data);
-    })
-    .catch(error => console.log(error));
-}
-
-function parseXML(xmlStr) {
-  // Parse the XML string
-  var parser = new DOMParser();
-  var xmlDoc = parser.parseFromString(xmlStr, "text/xml");
-
-  // Define the namespace
-  var ns = "kaspiShopping";
-  var offers = xmlDoc.getElementsByTagNameNS(ns, "offer");
-
-  // Extract model and price
-  for (var i = 0; i < offers.length; i++) {
-    var model = offers[i].getElementsByTagNameNS(ns, "model")[0].textContent;
-    var price = offers[i].getElementsByTagNameNS(ns, "price")[0].textContent;
-    console.log("Model: " + model + ", Price: " + price);
-  }
-}
-console.log("Name: " + name + ", Model: " + model + ", Price: " + price);
-
-// Call the function with the path to your XML file
-loadXMLDoc("pricelist/17342053_66d5b64439a90d7e590919e2.xml");
-
-
-var min;
-
-if (min == True){
-    lower(price)
-}
-function lower(price){
-    return price -= 2;
-    
-}*/
-
-
 document.getElementById('upload-form').addEventListener('submit', function(event) {
     event.preventDefault();
 
     const fileInput = document.getElementById('xmlFile');
     const file = fileInput.files[0];
+    let checkCount = 0; // Счетчик проверок
 
     if (file) {
         const reader = new FileReader();
 
         reader.onload = async function(e) {
+            console.log("XML-файл загружен:", e.target.result);
             const parser = new DOMParser();
             const xmlDoc = parser.parseFromString(e.target.result, "text/xml");
 
-            // Извлечение всех товаров
             const offers = Array.from(xmlDoc.getElementsByTagName('offer'));
-            let checkCount = 0;
 
-            // Функция для проверки цен на Kaspi.kz
-            async function checkKaspiPrice(productName) {
-    try {
-        const response = await fetch(`https://kaspi.kz/shop/api/products/search?q=${encodeURIComponent(productName)}`, {
-            method: 'GET',
-            headers: {
-                'Accept': 'application/json',
-                'Authorization': 'Bearer 0brigbWq/0WSnkYhQ87wTs1P32q12buvZ+sbGc7ttnU=' // Замените на ваш реальный токен
+            function transliterate(text) {
+                const cyrillicToLatinMap = {
+                    'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'e', 'ж': 'zh',
+                    'з': 'z', 'и': 'i', 'й': 'y', 'к': 'k', 'л': 'l', 'м': 'm', 'н': 'n', 'о': 'o',
+                    'п': 'p', 'р': 'r', 'с': 's', 'т': 't', 'у': 'u', 'ф': 'f', 'х': 'kh', 'ц': 'ts',
+                    'ч': 'ch', 'ш': 'sh', 'щ': 'shch', 'ы': 'y', 'э': 'e', 'ю': 'yu', 'я': 'ya',
+                    'ь': '', 'ъ': '', ' ': '-', ',': '', '.': '-', '-': '-', '(': '', ')': ''
+                };
+                
+                return text.toLowerCase().split('').map(char => cyrillicToLatinMap[char] || char).join('');
             }
-        });
 
-        if (!response.ok) {
-            throw new Error(`Ошибка HTTP: ${response.status}`);
-        }
+            async function checkKaspiPriceByUrl(productName, sku) {
+                try {
+                    const productNameForUrl = transliterate(productName);
+                    const productUrl = `https://kaspi.kz/shop/p/${productNameForUrl}-${sku}/`;
+                    const proxyUrl = `http://localhost:8080/${productUrl}`;
+                    
+                    console.log("Visiting URL:", proxyUrl);
 
-        const data = await response.json();
-        const product = data.items[0]; // Допустим, вы берете первый результат поиска
+                    const response = await fetch(proxyUrl, {
+                        method: 'GET',
+                        headers: {
+                            'Origin': 'http://localhost:8080',
+                            'x-requested-with': 'XMLHttpRequest'
+                        }
+                    });
 
-        if (product) {
-            const kaspiPrice = product.price; // Предполагается, что цена доступна в объекте продукта
-            return kaspiPrice;
-        } else {
-            console.error("Товар не найден в API Kaspi.kz");
-            return null;
-        }
-    } catch (error) {
-        console.error("Ошибка при обращении к API Kaspi.kz:", error);
-        return null;
-    }
-}
+                    const text = await response.text();
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(text, 'text/html');
+                    const priceElement = doc.querySelector('meta[property="product:price:amount"]');
 
-// Пример использования функции
-checkKaspiPrice("название_товара").then(price => {
-    console.log("Цена на Kaspi.kz:", price);
-});
+                    if (priceElement) {
+                        const kaspiPrice = parseInt(priceElement.getAttribute('content'), 10);
+                        return kaspiPrice;
+                    } else {
+                        console.error("Цена не найдена на странице");
+                        return null;
+                    }
+                } catch (error) {
+                    console.error("Ошибка при запросе страницы Kaspi:", error);
+                    return null;
+                }
+            }
 
-
-            // Функция для отображения всех товаров
             async function renderAllItems() {
                 const itemsContainer = document.getElementById('items-container');
                 itemsContainer.innerHTML = '';
 
                 for (let i = 0; i < offers.length; i++) {
-                    const modelName = offers[i].getElementsByTagName('model')[0].textContent;
-                    const priceTag = offers[i].getElementsByTagName('price')[0];
+                    const offer = offers[i];
+                    const sku = offer.getAttribute('sku');
+                    const modelName = offer.getElementsByTagName('model')[0].textContent;
+                    const priceTag = offer.getElementsByTagName('price')[0];
                     let price = parseInt(priceTag.textContent, 10);
 
-                    // Проверка цены на Kaspi.kz
-                    const kaspiPrice = await checkKaspiPrice(modelName);
-                    let updatedPrice = price;
+                    const kaspiPrice = await checkKaspiPriceByUrl(modelName, sku);
 
-                    if (kaspiPrice && price > kaspiPrice) {
-                        updatedPrice = kaspiPrice - 1;
+                    let updatedPrice = price;
+                    let minPriceInputValue = 120000; // Устанавливаем дефолтное значение минимальной цены
+
+                    if (price > kaspiPrice) {
+                        updatedPrice = Math.max(kaspiPrice - 1, minPriceInputValue); // Ограничение на минимальную цену
+                        priceTag.textContent = updatedPrice;
                     }
 
-                    // Отображение товара
                     const itemDiv = document.createElement('div');
                     itemDiv.classList.add('item');
                     itemDiv.innerHTML = `
-                        <div class="names">Товар: ${modelName}</div>
+                        <div class="names">Товар: ${modelName} (SKU: ${sku})</div>
                         <div class="prices">
                             Текущая цена: ${price} ₸
                             <br> Цена на Kaspi: ${kaspiPrice} ₸
                             <br> Обновленная цена: ${updatedPrice} ₸
-                            <br> Минимальная цена: <input type="number" id="min-price-${i}" value="{price}" step="1"> ₸
+                            <br> Минимальная цена: <input type="number" id="min-price-${i}" value="${minPriceInputValue}" step="1"> ₸
                         </div>
                     `;
+
                     itemsContainer.appendChild(itemDiv);
+
+                    // Обновляем минимальную цену для каждого товара
+                    document.getElementById(`min-price-${i}`).addEventListener('input', function() {
+                        minPriceInputValue = parseInt(this.value, 10);
+                    });
                 }
             }
-            async function checkKaspiAttributes() {
-    try {
-        const response = await fetch(`https://kaspi.kz/shop/api/products/classification/attributes?c=Master - Exercise notebooks`, {
-            method: 'GET',
-            headers: {
-                'Accept': 'application/json',
-                'X-Auth-Token': '0brigbWq/0WSnkYhQ87wTs1P32q12buvZ+sbGc7ttnU=' // Замените на ваш реальный токен
-            }
-        });
 
-        if (!response.ok) {
-            throw new Error(`Ошибка HTTP: ${response.status}`);
-        }
-
-        const data = await response.json();
-        console.log("Данные атрибутов с Kaspi.kz:", data);
-        return data;
-    } catch (error) {
-        console.error("Ошибка при обращении к API Kaspi:", error);
-        return null;
-    }
-}
-
-// Пример вызова функции
-checkKaspiAttributes();
-
-
-            // Отображаем все товары
             renderAllItems();
 
-            // Функция для запуска проверки каждые 5 минут
+            function saveUpdatedXML() {
+                const serializer = new XMLSerializer();
+                const updatedXML = serializer.serializeToString(xmlDoc);
+
+                const blob = new Blob([updatedXML], { type: 'application/xml' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = 'updated_prices.xml';
+                link.click();
+            }
+
+            const saveButton = document.createElement('button');
+            saveButton.textContent = "Скачать обновленный XML файл";
+            saveButton.addEventListener('click', saveUpdatedXML);
+            document.body.appendChild(saveButton);
+
+            // Функция, запускающая проверку каждые 5 минут
             function startPriceCheck() {
                 setInterval(async function() {
-                    checkCount++;
+                    checkCount++; // Увеличиваем счетчик проверок
                     document.getElementById('checkCount').textContent = `Обновления: ${checkCount}`;
 
                     console.log("Запуск проверки цен...");
                     for (let i = 0; i < offers.length; i++) {
-                        const modelName = offers[i].getElementsByTagName('model')[0].textContent;
-                        const priceTag = offers[i].getElementsByTagName('price')[0];
+                        const offer = offers[i];
+                        const modelName = offer.getElementsByTagName('model')[0].textContent;
+                        const sku = offer.getAttribute('sku');
+                        const priceTag = offer.getElementsByTagName('price')[0];
                         let price = parseInt(priceTag.textContent, 10);
 
+                        // Получаем минимальную цену, введенную пользователем
                         const minPriceInput = document.getElementById(`min-price-${i}`);
-                        const minPrice = minPriceInput ? parseInt(minPriceInput.value, 10) : 120000;
+                        const minPrice = minPriceInput ? parseInt(minPriceInput.value, 10) : 120000; // Значение по умолчанию 120000
 
-                        const kaspiPrice = await checkKaspiPrice(modelName);
+                        // Проверка цены на Kaspi.kz через URL товара
+                        const kaspiPrice = await checkKaspiPriceByUrl(modelName, sku);
 
+                        // Обновление цены, если нужно, и она не ниже минимальной
                         if (price > kaspiPrice && (kaspiPrice - 1) >= minPrice) {
                             priceTag.textContent = kaspiPrice - 1;
                             console.log(`Цена на ${modelName} обновлена до ${kaspiPrice - 1}`);
                         }
                     }
-                    renderAllItems();
-                }, 5 * 60 * 1000);
+                    renderAllItems(); // Обновляем интерфейс
+                }, 5 * 60 * 1000); // Интервал 5 минут
             }
+            
 
+            // Запуск процесса проверки каждые 5 минут
             startPriceCheck();
         };
 
         reader.readAsText(file);
     }
-    
 });
+
+
+
+
+
+
+
 
 
 
