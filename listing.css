@@ -5,9 +5,10 @@
 }
 
 body{
-    display:flex;
-    justify-content: center;
-    align-items: center;
+    display: flex;
+    flex-direction: column; /* Устанавливаем вертикальное расположение */
+    justify-content: flex-start; /* Оставляем элементы вверху */
+    align-items: center; /* Центрируем по горизонтали */
     min-height: 100vh;
     background-image: url(images/red-dead-redemption-2-silhouette-art.jpg);
     background-attachment: fixed;
@@ -22,6 +23,7 @@ body{
     color: aliceblue;
     border-radius: 10px;
     padding: 30px 40px;
+    margin: 0 auto; /* Центрируем блок */
 }
 .wrapper .item{
     font-family: Nunito;
@@ -42,4 +44,9 @@ body{
 
 .wrapper hr{
     width:90%;
+}
+.upload-form {
+    width: 100%;
+    margin-bottom: 20px;
+    
 }
