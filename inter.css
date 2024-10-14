@@ -1,0 +1,93 @@
+@import url('https://fonts.googleapis.com/css2?family=New+Amsterdam&display=swap');ss
+*{
+    margin:0;
+    padding:0;
+}
+body {
+    background-color: #f2ebeb;
+    background-image: url('https://i.pinimg.com/originals/d2/ff/55/d2ff551d12610c9d4b79707b0a58ed15.png');
+    background-repeat: no-repeat;
+    background-size:cover;
+    background-attachment: fixed;
+}
+#colorletter {
+    color:#000;
+    text-align: left;
+    font-size: 1.5em;
+    font-style: normal;
+    font-weight: 500;
+    font-family: 'https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap';
+    text-transform: full-width;
+    word-spacing: 20px;
+    letter-spacing: 3px;
+}
+#header{
+    width:100%;
+    height:100%;
+    line-height: 70px;
+    float:left
+}
+#nav {
+    display:block;
+        width:10%;
+    height:50%;
+    float: left;
+    margin-left:2px;
+    margin-right: 4px;
+    margin-top: 10px;
+    border-radius: 3px;
+}
+#nav li {
+    display: inline;
+     border-radius:30px;
+    padding: 20px 35px;
+    cursor: pointer;
+
+    background: deepskyblue;
+}
+#ida {
+    cursor:default;
+    font-size:3em; 
+    color:fff;
+    margin-right: 1380px;
+    margin-left: 35px;
+    float:left;
+}
+
+#nav li:hover {
+    color:#fff;
+    background: skyblue;
+     border-radius:30px;
+    
+}
+#pblock {
+    background:white;
+    height:93%;
+    width: 99.8%;
+    border: 2px solid black;
+    float:left;
+    position: relative;
+    
+}
+#block {
+    background-image:url('https://xmple.com/wallpaper/gradient-black-grey-linear-1920x1080-c2-000000-a9a9a9-a-300-f-14.svg');
+    height:950px;
+    width: 87%;
+    background: aquamarine;
+    margin-top: 100px;
+    padding-top: 50px;
+    margin-bottom: 20px;
+    border:3px solid black;
+    border-top-style: normal;
+    border-radius:3px;
+    opacity: 0.9;
+    margin-right: 150px;
+    margin-left: 120px;
+    background-size: cover;
+    position: relative;
+    float:left;
+    z-index: 10;
+}
+#fblock {
+    margin-top: 30px;
+}
