@@ -1,2 +1,0 @@
-# REDUCE.io
-reduced
