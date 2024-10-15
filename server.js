@@ -13,8 +13,8 @@ async function startServer() {
     // Создаем подключение к базе данных
     const db = await mysql.createConnection({
         host: 'localhost',
-        user: 'admin',
-        password: 'Olzhas8520!',
+        user: 'root',
+        password: '',
         database: 'registration'
     });
 
