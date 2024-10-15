@@ -54,7 +54,7 @@ async function checkKaspiPriceByUrl(productName, sku) {
 
 // Обработка XML для каждого пользователя
 async function processUserXML(userId) {
-    const xmlFilePath = `C:/Users/olzha/CeoHTML/javas/${userId}prices.xml`;  // файл с ID пользователя
+    const xmlFilePath = `reduce.io/price/${userId}prices.xml`;  // файл с ID пользователя
     fs.readFile(xmlFilePath, (err, data) => {
         if (err) {
             console.error(`Ошибка при чтении XML файла пользователя ${userId}:`, err);
@@ -130,7 +130,7 @@ async function processUserXML(userId) {
             const updatedXml = builder.buildObject(result);
             
             // Сохраняем новый XML файл с динамическим userId
-            fs.writeFile(`C:/Users/olzha/CeoHTML/javas/${userId}upload.xml`, updatedXml, (err) => {
+            fs.writeFile(`reduce.io/price/${userId}upload.xml`, updatedXml, (err) => {
                 if (err) {
                     console.error(`Ошибка при записи обновленного XML файла для пользователя ${userId}:`, err);
                 } else {
