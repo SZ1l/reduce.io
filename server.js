@@ -10,7 +10,7 @@ const port = 3000;
 
 const db = await mysql.createConnection({
     host: 'localhost',
-    user: 'admin',
+    user: 'root',
     password: '',
     database: 'registration'
 });
