@@ -33,28 +33,33 @@ async function startServer() {
 
     // Функция для получения цены с Kaspi.kz и URL
     async function checkKaspiPriceByUrl(productName, sku) {
-        const productNameForUrl = transliterate(productName);
-        const productUrl = `https://kaspi.kz/shop/p/${productNameForUrl}-${sku}/`;
+    const productNameForUrl = transliterate(productName);
+    const productUrl = `https://kaspi.kz/shop/p/${productNameForUrl}-${sku}/`;
 
-        try {
-            const response = await fetch(productUrl);
-            const text = await response.text();
-            console.log(`Запрос по URL: ${productUrl}`);
-
-            const priceMatch = text.match(/"product:price:amount" content="(\d+)"/);
-            if (priceMatch) {
-                const kaspiPrice = parseInt(priceMatch[1], 10);
-                console.log(kaspiPrice);
-                return { kaspiPrice, productUrl };
-            } else {
-                console.error(`Цена не найдена на странице ${productUrl}`);
-                return { kaspiPrice: null, productUrl };
+    try {
+        const response = await fetch(productUrl, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'
             }
-        } catch (error) {
-            console.error(`Ошибка при запросе страницы Kaspi по URL ${productUrl}:`, error);
+        });
+        const text = await response.text();
+        console.log(`Запрос по URL: ${productUrl}`);
+
+        const priceMatch = text.match(/"product:price:amount" content="(\d+)"/);
+        if (priceMatch) {
+            const kaspiPrice = parseInt(priceMatch[1], 10);
+            console.log(kaspiPrice);
+            return { kaspiPrice, productUrl };
+        } else {
+            console.error(`Цена не найдена на странице ${productUrl}`);
             return { kaspiPrice: null, productUrl };
         }
+    } catch (error) {
+        console.error(`Ошибка при запросе страницы Kaspi по URL ${productUrl}:`, error);
+        return { kaspiPrice: null, productUrl };
     }
+}
+
 
     // Обработка XML для каждого пользователя
     async function processUserXML(userId) {
