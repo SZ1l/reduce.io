@@ -38,10 +38,14 @@ async function startServer() {
 
     try {
         const response = await fetch(productUrl, {
-            headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'
-            }
-        });
+    headers: {
+        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1',
+        'Accept-Language': 'ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+        'Connection': 'keep-alive'
+    }
+});
+
          if (!response.ok) {
             console.error(`Ошибка HTTP: ${response.status} при запросе ${productUrl}`);
             return { kaspiPrice: null, productUrl };
