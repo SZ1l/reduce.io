@@ -8,107 +8,96 @@ import fetch from 'node-fetch';
 const app = express();
 const port = 3000;
 
-// Обернем основной код в асинхронную функцию
-async function startServer() {
-    // Создаем подключение к базе данных
-    const db = await mysql.createConnection({
-        host: 'localhost',
-        user: 'root',
-        password: '',
-        database: 'registration'
-    });
+const db = await mysql.createConnection({
+    host: 'localhost',
+    user: 'root',
+    password: '',
+    database: 'registration'
+});
 
-    // Остальной код работы с базой данных, XML и другими операциями
-    // Транслитерация для формирования URL
-    function transliterate(text) {
-        const cyrillicToLatinMap = {
-            'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'e', 'ж': 'zh',
-            'з': 'z', 'и': 'i', 'й': 'y', 'к': 'k', 'л': 'l', 'м': 'm', 'н': 'n', 'о': 'o',
-            'п': 'p', 'р': 'r', 'с': 's', 'т': 't', 'у': 'u', 'ф': 'f', 'х': 'kh', 'ц': 'ts',
-            'ч': 'ch', 'ш': 'sh', 'щ': 'shch', 'ы': 'y', 'э': 'e', 'ю': 'yu', 'я': 'ya',
-            'ь': '', 'ъ': '', '/': '-', ' ': '-', ',': '', '.': '-', '-': '-', '(': '', ')': ''
-        };
-        return text.toLowerCase().split('').map(char => cyrillicToLatinMap[char] || char).join('');
-    }
+// Transliteration for URL formation
+function transliterate(text) {
+    const cyrillicToLatinMap = {
+        'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'e', 'ж': 'zh',
+        'з': 'z', 'и': 'i', 'й': 'y', 'к': 'k', 'л': 'l', 'м': 'm', 'н': 'n', 'о': 'o',
+        'п': 'p', 'р': 'r', 'с': 's', 'т': 't', 'у': 'u', 'ф': 'f', 'х': 'kh', 'ц': 'ts',
+        'ч': 'ch', 'ш': 'sh', 'щ': 'shch', 'ы': 'y', 'э': 'e', 'ю': 'yu', 'я': 'ya',
+        'ь': '', 'ъ': '', '/': '-', ' ': '-', ',': '', '.': '-', '-': '-', '(': '', ')': ''
+    };
+    return text.toLowerCase().split('').map(char => cyrillicToLatinMap[char] || char).join('');
+}
 
-    // Функция для получения цены с Kaspi.kz и URL
-    async function checkKaspiPriceByUrl(productName, sku) {
+// Modified checkKaspiPriceByUrl function with retry mechanism
+async function checkKaspiPriceByUrl(productName, sku, retries = 3) {
     const productNameForUrl = transliterate(productName);
     const productUrl = `https://kaspi.kz/shop/p/${productNameForUrl}-${sku}/`;
 
-    try {
-        const response = await fetch(productUrl, {
-    headers: {
-        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1',
-        'Accept-Language': 'ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
-        'Connection': 'keep-alive'
-    }
-});
+    for (let attempt = 1; attempt <= retries; attempt++) {
+        try {
+            const response = await fetch(productUrl);
+            const text = await response.text();
+            console.log(`Requesting URL: ${productUrl} (attempt ${attempt})`);
 
-         if (!response.ok) {
-            console.error(`Ошибка HTTP: ${response.status} при запросе ${productUrl}`);
-            return { kaspiPrice: null, productUrl };
-        }
-        const text = await response.text();
-        console.log(`Запрос по URL: ${productUrl}`);
+            const priceMatch = text.match(/"product:price:amount" content="(\d+)"/);
+            if (priceMatch) {
+                const kaspiPrice = parseInt(priceMatch[1], 10);
+                console.log(kaspiPrice);
+                return { kaspiPrice, productUrl };
+            } else {
+                console.error(`Price not found on page ${productUrl}`);
+                return { kaspiPrice: null, productUrl };
+            }
+        } catch (error) {
+            console.error(`Error requesting Kaspi page at URL ${productUrl} (attempt ${attempt}):`, error);
 
-        const priceMatch = text.match(/"product:price:amount" content="(\d+)"/);
-        if (priceMatch) {
-            const kaspiPrice = parseInt(priceMatch[1], 10);
-            console.log(kaspiPrice);
-            return { kaspiPrice, productUrl };
-        } else {
-            console.error(`Цена не найдена на странице ${productUrl}`);
-            return { kaspiPrice: null, productUrl };
+            if (attempt === retries) {
+                return { kaspiPrice: null, productUrl };
+            }
+            
+            await new Promise(resolve => setTimeout(resolve, 1000 * attempt)); // Delay before retrying
         }
-    } catch (error) {
-        console.error(`Ошибка при запросе страницы Kaspi по URL ${productUrl}:`, error);
-        return { kaspiPrice: null, productUrl };
     }
 }
 
+// Process XML for each user in batches
+async function processUserXML(userId) {
+    const xmlFilePath = `C:/Users/olzha/CeoHTML/javas/${userId}prices.xml`;
+    fs.readFile(xmlFilePath, (err, data) => {
+        if (err) {
+            console.error(`Error reading XML file for user ${userId}:`, err);
+            return;
+        }
 
-    // Обработка XML для каждого пользователя
-    async function processUserXML(userId) {
-        const xmlFilePath = `/home/ubuntu/reduce.io/price/${userId}prices.xml`;
-        fs.readFile(xmlFilePath, (err, data) => {
+        const parser = new xml2js.Parser({ ignoreAttrs: false, explicitArray: false });
+        parser.parseString(data, async (err, result) => {
             if (err) {
-                console.error(`Ошибка при чтении XML файла пользователя ${userId}:`, err);
+                console.error(`Error parsing XML file for user ${userId}:`, err);
                 return;
             }
 
-            const parser = new xml2js.Parser({ ignoreAttrs: false, explicitArray: false });
-            parser.parseString(data, async (err, result) => {
-                if (err) {
-                    console.error(`Ошибка при парсинге XML файла пользователя ${userId}:`, err);
-                    return;
-                }
+            if (!result.kaspi_catalog || !result.kaspi_catalog.offers || !result.kaspi_catalog.offers.offer) {
+                console.error(`Error: XML structure for user ${userId} lacks offers.offer`);
+                return;
+            }
 
-                if (!result.kaspi_catalog || !result.kaspi_catalog.offers || !result.kaspi_catalog.offers.offer) {
-                    console.error(`Ошибка: структура XML файла пользователя ${userId} не содержит offers.offer`);
-                    return;
-                }
+            const offers = Array.isArray(result.kaspi_catalog.offers.offer)
+                ? result.kaspi_catalog.offers.offer
+                : [result.kaspi_catalog.offers.offer];
 
-                const offers = Array.isArray(result.kaspi_catalog.offers.offer)
-                    ? result.kaspi_catalog.offers.offer
-                    : [result.kaspi_catalog.offers.offer];
+            const productCount = offers.length;
+            const delay = productCount < 10 ? 10000 : productCount < 100 ? 2000 : 800;
+            const batchSize = 10;
 
-                const productCount = offers.length;
+            console.log(`User ${userId} has ${productCount} products. Processing in batches with delay: ${delay} ms`);
 
-                let delay = 0;
-                if (productCount < 10) {
-                    delay = 50000;
-                } else if (productCount < 100) {
-                    delay = 5000;
-                } else {
-                    delay = 1000;
-                }
+            // Recursive batch processor
+            async function processBatch(batchIndex = 0) {
+                const start = batchIndex * batchSize;
+                const end = Math.min(start + batchSize, offers.length);
 
-                console.log(`Количество товаров в XML пользователя ${userId}: ${productCount}. Установленный интервал: ${delay} мс`);
-
-                for (let i = 0; i < offers.length; i++) {
-                    const offer = offers[i];
+                const batch = offers.slice(start, end);
+                for (let i = 0; i < batch.length; i++) {
+                    const offer = batch[i];
                     const modelName = offer.model;
                     const sku = offer.$.sku;
                     let price = parseInt(offer.price, 10);
@@ -136,51 +125,55 @@ async function startServer() {
                     offer.price = price;
                 }
 
-                const builder = new xml2js.Builder();
-                const updatedXml = builder.buildObject(result);
+                if (end < offers.length) {
+                    await processBatch(batchIndex + 1);  // Process next batch
+                } else {
+                    // All batches processed, save the XML
+                    const builder = new xml2js.Builder();
+                    const updatedXml = builder.buildObject(result);
+                    
+                    fs.writeFile(`C:/Users/olzha/CeoHTML/javas/${userId}upload.xml`, updatedXml, (err) => {
+                        if (err) {
+                            console.error(`Error saving updated XML file for user ${userId}:`, err);
+                        } else {
+                            console.log(`XML file successfully updated for user ${userId}`);
+                        }
+                    });
+                }
+            }
 
-                fs.writeFile(`/home/ubuntu/reduce.io/price/${userId}upload.xml`, updatedXml, (err) => {
-                    if (err) {
-                        console.error(`Ошибка при записи обновленного XML файла для пользователя ${userId}:`, err);
-                    } else {
-                        console.log(`XML файл успешно обновлен для пользователя ${userId}`);
-                    }
-                });
-            });
+            await processBatch();  // Start batch processing
         });
-    }
-
-    // Функция для обработки всех зарегистрированных пользователей
-    async function processAllUsers() {
-        const [users] = await db.query('SELECT id FROM users');
-        for (const user of users) {
-            const userId = user.id;
-            console.log(`Запуск обработки для пользователя с ID: ${userId}`);
-            await processUserXML(userId);
-        }
-    }
-
-    // Планировщик для обработки всех пользователей каждые 5 минут
-    cron.schedule('*/10 * * * *', async () => {
-        console.log('Запуск проверки цен для всех пользователей...');
-        await processAllUsers();
-    });
-
-    // API для получения данных из базы данных по ID пользователя
-    app.get('/get-offers/:userId', async (req, res) => {
-        const { userId } = req.params;
-        const [rows] = await db.query('SELECT * FROM offers WHERE user_id = ?', [userId]);
-        res.json(rows);
-    });
-
-    // Запуск сервера
-    app.listen(port, () => {
-        console.log(`Сервер запущен на http://localhost:${port}`);
     });
 }
 
-// Вызов асинхронной функции для старта сервера
-startServer().catch(error => {
-    console.error('Ошибка при запуске сервера:', error);
+// Function to process all registered users
+async function processAllUsers() {
+    const [users] = await db.query('SELECT id FROM users');
+
+    for (const user of users) {
+        const userId = user.id;
+        console.log(`Starting processing for user with ID: ${userId}`);
+        await processUserXML(userId);  // Process each user's XML
+    }
+}
+
+// Scheduler to process all users every 15 minutes
+cron.schedule('*/2 * * * *', async () => {
+    console.log('Starting price check for all users...');
+    await processAllUsers();
 });
+
+// API to retrieve data from the database by user ID
+app.get('/get-offers/:userId', async (req, res) => {
+    const { userId } = req.params;
+    const [rows] = await db.query('SELECT * FROM offers WHERE user_id = ?', [userId]);
+    res.json(rows);
+});
+
+// Start the server
+app.listen(port, () => {
+    console.log(`Server running at http://localhost:${port}`);
+});
+
 
