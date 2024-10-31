@@ -3,7 +3,7 @@ import cron from 'node-cron';
 import mysql from 'mysql2/promise';
 
 // Path to XML file
-const xmlFilePath = 'C:/Users/olzha/CeoHTML/javas/5upload.xml';
+const xmlFilePath = '/home/ubuntu/reduce.io/prices/5upload.xml';
 
 // Kaspi login credentials
 const login = 'szjmlj@gmail.com';  
