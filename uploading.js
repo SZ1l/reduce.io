@@ -76,7 +76,7 @@ async function uploadToKaspi(userId) {
 }
 
 // Schedule the job every 15 minutes
-cron.schedule('*/15 * * * *', () => {
+cron.schedule('*/30 * * * *', () => {
     console.log('Attempting to upload price list to Kaspi...');
     const userId = 5; // Replace with the actual user ID from session or config
     uploadToKaspi(userId);
