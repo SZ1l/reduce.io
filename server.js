@@ -34,7 +34,7 @@ async function checkKaspiPriceByUrl(productName, sku) {
     const page = await browser.newPage();
 
     try {
-        await page.setUserAgent('your-custom-user-agent-string');
+        await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36');
         await page.setExtraHTTPHeaders({
             'Accept-Language': 'ru-RU,ru;q=0.9',
             'Referer': 'https://kaspi.kz/'
