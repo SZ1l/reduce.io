@@ -165,7 +165,7 @@ async function processAllUsers() {
 }
 
 // Scheduler to process all users every 15 minutes
-cron.schedule('*/2 * * * *', async () => {
+cron.schedule('*/22 * * * *', async () => {
     console.log('Starting price check for all users...');
     await processAllUsers();
 });
