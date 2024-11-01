@@ -34,7 +34,12 @@ async function checkKaspiPriceByUrl(productName, sku, retries = 3) {
 
     for (let attempt = 1; attempt <= retries; attempt++) {
         try {
-            const response = await fetch(productUrl);
+            const response = await fetch(productUrl, {
+                headers: {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.198 Safari/537.36',
+                    'Accept-Language': 'en-US,en;q=0.9'
+                }
+            });
             const text = await response.text();
             console.log(`Requesting URL: ${productUrl} (attempt ${attempt})`);
 
@@ -58,6 +63,7 @@ async function checkKaspiPriceByUrl(productName, sku, retries = 3) {
         }
     }
 }
+
 
 // Process XML for each user in batches
 async function processUserXML(userId) {
